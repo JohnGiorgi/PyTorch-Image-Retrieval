@@ -138,8 +138,10 @@ class NPairLoss(nn.Module):
         positives = torch.unsqueeze(positives, dim=1)  # (n, 1, embedding_size)
 
         x = torch.matmul(anchors, (negatives - positives).transpose(1, 2))  # (n, 1, n-1)
-        x = torch.sum(torch.exp(x), 2)  # (n, 1)
-        loss = torch.mean(torch.log(1+x))
+        # Implements the log-sum-exp trick for numerical stability (see: https://en.wikipedia.org/wiki/LogSumExp)
+        a, _ = torch.max(x, dim=0)
+        x = torch.sum(torch.exp(x - a), 2)  # (n, 1)
+        loss = torch.mean(a + torch.log(1+x))
         return loss
 
     @staticmethod
